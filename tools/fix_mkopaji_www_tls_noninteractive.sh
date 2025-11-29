@@ -3,8 +3,8 @@
 # Intended to be run on the server as root (e.g., via SSH action)
 set -euo pipefail
 
-DOMAIN="mkopaji.com"
-WWW="www.mkopaji.com"
+DOMAIN="kopa.mkopaji.com"
+WWW="www.kopa.mkopaji.com"
 SITE_CONF="/etc/nginx/sites-available/mkopaji.conf"
 SITE_LINK="/etc/nginx/sites-enabled/mkopaji.conf"
 BACKUP_DIR="/root/nginx-backups-$(date +%Y%m%d-%H%M%S)"
@@ -24,19 +24,19 @@ cat > "${SITE_CONF}.new" <<'NGINX_CONF'
 # mkopaji site config - created by automation
 server {
   listen 80;
-  server_name mkopaji.com www.mkopaji.com;
-  return 301 https://mkopaji.com$request_uri;
+  server_name kopa.mkopaji.com www.kopa.mkopaji.com;
+  return 301 https://kopa.mkopaji.com$request_uri;
 }
 
 server {
   listen 443 ssl;
-  server_name mkopaji.com;
+  server_name kopa.mkopaji.com;
 
   root /var/www/html/kopesha-loan-app;
   index index.html index.htm;
 
-  ssl_certificate /etc/letsencrypt/live/mkopaji.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/mkopaji.com/privkey.pem;
+  ssl_certificate /etc/letsencrypt/live/kopa.mkopaji.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/kopa.mkopaji.com/privkey.pem;
   include /etc/letsencrypt/options-ssl-nginx.conf;
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -48,14 +48,14 @@ server {
 # Ensure www HTTPS redirects to apex
 server {
   listen 443 ssl;
-  server_name www.mkopaji.com;
+  server_name www.kopa.mkopaji.com;
 
-  ssl_certificate /etc/letsencrypt/live/mkopaji.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/mkopaji.com/privkey.pem;
+  ssl_certificate /etc/letsencrypt/live/kopa.mkopaji.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/kopa.mkopaji.com/privkey.pem;
   include /etc/letsencrypt/options-ssl-nginx.conf;
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
-  return 301 https://mkopaji.com$request_uri;
+  return 301 https://kopa.mkopaji.com$request_uri;
 }
 NGINX_CONF
 
