@@ -1,4 +1,4 @@
-name: Run WWW/TLS Fix on EC2
+name: Run WWW/TLS Fix on Kopa Mkopa EC2
 
 on:
   workflow_dispatch: {}
@@ -17,7 +17,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           source: "tools/fix_mkopaji_www_tls_noninteractive.sh"
-          target: "/tmp/fix_mkopaji_www_tls_noninteractive.sh"
+          target: "/tmp/fix_kopa_mkopaji_www_tls_noninteractive.sh"
 
       - name: Set execute and run script via SSH
         uses: appleboy/ssh-action@v1.2.1
@@ -26,13 +26,24 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
-            sudo mv /tmp/fix_mkopaji_www_tls_noninteractive.sh /usr/local/bin/fix_mkopaji_www_tls_noninteractive.sh
-            sudo chmod +x /usr/local/bin/fix_mkopaji_www_tls_noninteractive.sh
-            sudo /usr/local/bin/fix_mkopaji_www_tls_noninteractive.sh
+            sudo mv /tmp/fix_kopa_mkopaji_www_tls_noninteractive.sh /usr/local/bin/fix_kopa_mkopaji_www_tls_noninteractive.sh
+            sudo chmod +x /usr/local/bin/fix_kopa_mkopaji_www_tls_noninteractive.sh
+            sudo /usr/local/bin/fix_kopa_mkopaji_www_tls_noninteractive.sh
 
       - name: Fetch verification from public site
         run: |
-          echo "Fetching https://mkopaji.com/ to confirm headers"
-          curl -I https://mkopaji.com/ || true
+          echo "Fetching https://kopa.mkopaji.com/ to confirm headers"
+          curl -I https://kopa.mkopaji.com/ || true
 
 # IMPORTANT: Add repository secrets: EC2_HOST, EC2_USERNAME, EC2_SSH_PRIVATE_KEY (private key contents)
+#
+# To add these secrets:
+# 1. Go to your repository on GitHub.
+# 2. Click on 'Settings' > 'Secrets and variables' > 'Actions'.
+# 3. Click 'New repository secret'.
+# 4. Add the following secrets:
+#    - EC2_HOST: Your server's public IP or DNS (e.g., 69.169.97.136 or ec2-xx-xx-xx-xx.compute-1.amazonaws.com)
+#    - EC2_USERNAME: The SSH username (e.g., ubuntu, ec2-user, or root)
+#    - EC2_SSH_PRIVATE_KEY: The contents of your private SSH key (start with '-----BEGIN OPENSSH PRIVATE KEY-----')
+#
+# Without these, the workflow cannot connect to your server securely.
