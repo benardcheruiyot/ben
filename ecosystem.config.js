@@ -1,7 +1,7 @@
-// PM2 Ecosystem Configuration for MKOPAJI Production
+// PM2 Ecosystem Configuration for KOPA-MKOPAJI Production
 module.exports = {
   apps: [{
-    name: 'mkopaji-production',
+    name: 'kopa-mkopaji',
     script: 'backend/server.js',
     instances: 'max', // Use all available CPU cores
     exec_mode: 'cluster',
@@ -9,11 +9,11 @@ module.exports = {
     // Environment variables
     env: {
       NODE_ENV: 'development',
-      PORT: 3000
+      PORT: 3002
     },
     env_production: {
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: 3002
     },
     
     // Logging
@@ -49,8 +49,8 @@ module.exports = {
 //     user: 'ubuntu',
 //     host: 'your-server-ip',
 //     ref: 'origin/main',
-//     repo: 'git@github.com:yourusername/fundfast.git',
-//     path: '/var/www/fundfast',
+//     repo: 'git@github.com:yourusername/kopa-mkopaji.git',
+//     path: '/var/www/kopa-mkopaji',
 //     'post-deploy': 'npm install && pm2 reload ecosystem.config.js --env production'
 //   }
 // };

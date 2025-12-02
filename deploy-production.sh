@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# FUNDFAST Production Deployment Script
-# This script helps deploy FUNDFAST to a production server
+# KOPA-MKOPAJI Production Deployment Script
+# This script helps deploy KOPA-MKOPAJI to a production server
 
-echo "🚀 FUNDFAST Production Deployment Starting..."
+echo "🚀 KOPA-MKOPAJI Production Deployment Starting..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -113,7 +113,7 @@ print_status "Creating PM2 ecosystem configuration..."
 cat > ecosystem.config.js << EOF
 module.exports = {
   apps: [{
-    name: 'fundfast',
+    name: 'kopa-mkopaji',
     script: 'backend/server.js',
     instances: 'max',
     exec_mode: 'cluster',
@@ -151,13 +151,13 @@ else
 fi
 
 # Start with PM2
-print_status "Starting FUNDFAST with PM2..."
+print_status "Starting KOPA-MKOPAJI with PM2..."
 pm2 start ecosystem.config.js --env production
 
 if [ $? -eq 0 ]; then
-    print_success "FUNDFAST started successfully with PM2"
+    print_success "KOPA-MKOPAJI started successfully with PM2"
 else
-    print_error "Failed to start FUNDFAST with PM2"
+    print_error "Failed to start KOPA-MKOPAJI with PM2"
     exit 1
 fi
 
@@ -178,7 +178,7 @@ if command -v ufw &> /dev/null; then
     ufw allow 22    # SSH
     ufw allow 80    # HTTP
     ufw allow 443   # HTTPS
-    ufw allow 3000  # Application port
+    ufw allow 3002  # Application port
     print_success "Firewall configured"
 fi
 
@@ -187,7 +187,7 @@ print_status "Performing final health checks..."
 
 # Check if application is responding
 sleep 3
-if curl -f http://localhost:3000/api/health &> /dev/null; then
+if curl -f http://localhost:3002/api/health &> /dev/null; then
     print_success "Application health check passed"
 else
     print_warning "Application health check failed - please check logs"
@@ -199,21 +199,21 @@ echo "===================="
 pm2 status
 echo ""
 
-print_success "🎉 FUNDFAST Production Deployment Complete!"
+print_success "🎉 KOPA-MKOPAJI Production Deployment Complete!"
 echo ""
 print_status "Next Steps:"
-echo "1. Configure your domain and SSL certificate"
-echo "2. Update callback URLs in IntaSend dashboard"
+echo "1. Configure your domain and SSL certificate (kopa.mkopaji.com)"
+echo "2. Update callback URLs in IntaSend dashboard to use kopa.mkopaji.com"
 echo "3. Test with a small transaction"
-echo "4. Monitor logs: pm2 logs fundfast"
+echo "4. Monitor logs: pm2 logs kopa-mkopaji"
 echo "5. Monitor application: pm2 monit"
 echo ""
 print_status "Useful Commands:"
-echo "- View logs: pm2 logs fundfast"
-echo "- Restart app: pm2 restart fundfast"
-echo "- Stop app: pm2 stop fundfast"
+echo "- View logs: pm2 logs kopa-mkopaji"
+echo "- Restart app: pm2 restart kopa-mkopaji"
+echo "- Stop app: pm2 stop kopa-mkopaji"
 echo "- Monitor: pm2 monit"
-echo "- Health check: curl http://localhost:3000/api/health"
+echo "- Health check: curl http://localhost:3002/api/health"
 echo ""
 print_warning "Remember to:"
 echo "- Setup SSL certificate (Let's Encrypt recommended)"

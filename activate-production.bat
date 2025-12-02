@@ -1,5 +1,5 @@
 @echo off
-echo 🚀 FUNDFAST - Activating Production Mode
+echo 🚀 KOPA MKOPA - Activating Production Mode
 echo =========================================
 echo.
 

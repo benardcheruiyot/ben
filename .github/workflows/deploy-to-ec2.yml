@@ -7,7 +7,7 @@ on:
 
 env:
   NODE_VERSION: '18'
-  APP_NAME: 'fundfast-production'
+  APP_NAME: 'kopa-mkopaji'
 
 jobs:
   test:
@@ -59,7 +59,7 @@ jobs:
         username: root
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         source: "."
-        target: "/var/www/html/kopesha-loan-app"
+        target: "/var/www/html/kopa-mkopaji"
         strip_components: 1
 
     - name: 🔄 Restart App with PM2
@@ -69,7 +69,7 @@ jobs:
         username: root
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
-          cd /var/www/html/kopesha-loan-app
+          cd /var/www/html/kopa-mkopaji
           
           echo "🚀 Starting deployment..."
           
@@ -133,7 +133,7 @@ jobs:
       run: |
         if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
           curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"✅ Deployment successful! FundFast app has been deployed to production server."}' \
+          --data '{"text":"✅ Deployment successful! Kopa Mkopa app has been deployed to production server."}' \
           ${{ secrets.SLACK_WEBHOOK_URL }}
         fi
 

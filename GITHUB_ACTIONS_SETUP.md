@@ -10,7 +10,7 @@ This guide helps you set up automated deployment of your Express application to 
 - Node.js 18+ installed
 - PM2 installed globally
 - Git installed
-- Your application repository cloned to `/home/ubuntu/kopesha-loan-app`
+- Your application repository cloned to `/home/ubuntu/kopa-mkopaji`
 
 ### 2. EC2 Server Preparation
 
@@ -29,13 +29,13 @@ sudo npm install -g pm2
 sudo apt-get install -y git
 
 # Create application directory
-sudo mkdir -p /home/ubuntu/kopesha-loan-app
-sudo chown ubuntu:ubuntu /home/ubuntu/kopesha-loan-app
+sudo mkdir -p /home/ubuntu/kopa-mkopaji
+sudo chown ubuntu:ubuntu /home/ubuntu/kopa-mkopaji
 
 # Clone your repository
 cd /home/ubuntu
-git clone https://github.com/benardcheruiyot/mloan.git kopesha-loan-app
-cd kopesha-loan-app
+git clone https://github.com/benardcheruiyot/kopa-mkopaji.git kopa-mkopaji
+cd kopa-mkopaji
 
 # Install dependencies
 npm install
@@ -94,7 +94,7 @@ chmod 700 ~/.ssh
 ## Environment Variables
 
 ### Required Environment Files on Server
-Create `/home/ubuntu/kopesha-loan-app/.env.production`:
+Create `/home/ubuntu/kopa-mkopaji/.env.production`:
 
 ```env
 NODE_ENV=production
@@ -145,7 +145,7 @@ sudo certbot --nginx -d your-domain.com
 sudo apt install nginx
 
 # Create site configuration
-sudo nano /etc/nginx/sites-available/kopesha-loan-app
+sudo nano /etc/nginx/sites-available/kopa-mkopaji
 ```
 
 ```nginx
@@ -178,7 +178,7 @@ server {
 
 ```bash
 # Enable site
-sudo ln -s /etc/nginx/sites-available/kopesha-loan-app /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/kopa-mkopaji /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```

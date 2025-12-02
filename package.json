@@ -1,7 +1,7 @@
 {
-  "name": "kopesha-loan-app",
+  "name": "kopa-mkopaji",
   "version": "1.0.0",
-  "description": "Premium instant loan platform with real M-Pesa STK Push integration",
+  "description": "Kopa Mkopa - Premium instant loan platform with real M-Pesa STK Push integration",
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
@@ -14,11 +14,11 @@
     "validate-prod": "node validate-production.js",
     "deploy": "bash deploy-production.sh",
     "pm2-start": "pm2 start ecosystem.config.js --env production",
-    "pm2-stop": "pm2 stop mkopaji-production",
-    "pm2-restart": "pm2 restart mkopaji-production",
-    "pm2-logs": "pm2 logs mkopaji-production",
+    "pm2-stop": "pm2 stop kopa-mkopaji",
+    "pm2-restart": "pm2 restart kopa-mkopaji",
+    "pm2-logs": "pm2 logs kopa-mkopaji",
     "pm2-status": "pm2 status",
-    "health-check": "curl -f http://localhost:3000/api/health",
+    "health-check": "curl -f http://localhost:3002/api/health",
     "lint": "eslint backend/ --ext .js",
     "format": "prettier --write backend/ config/"
   },
@@ -32,7 +32,7 @@
     "instant-loans",
     "credit"
   ],
-  "author": "Kopesha Development Team",
+  "author": "Kopa Mkopa Development Team",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.0",
@@ -51,10 +51,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/kopesha-loan-app.git"
+    "url": "https://github.com/your-username/kopa-mkopaji.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/kopesha-loan-app/issues"
+    "url": "https://github.com/your-username/kopa-mkopaji/issues"
   },
-  "homepage": "https://github.com/your-username/kopesha-loan-app#readme"
+  "homepage": "https://github.com/your-username/kopa-mkopaji#readme"
 }

@@ -1,7 +1,7 @@
-# 🚀 FUNDFAST Production STK Push Implementation Guide
+# 🚀 KOPA-MKOPAJI Production STK Push Implementation Guide
 
 ## Overview
-Your FUNDFAST application is now ready for production M-Pesa STK Push integration! This guide will help you deploy to production safely.
+Your KOPA-MKOPAJI application is now ready for production M-Pesa STK Push integration! This guide will help you deploy to production safely.
 
 ## 🔧 What's Been Implemented
 
@@ -43,17 +43,17 @@ MPESA_CONSUMER_KEY=your_real_production_key
 MPESA_CONSUMER_SECRET=your_real_production_secret  
 MPESA_BUSINESS_SHORTCODE=your_real_till_number
 MPESA_PASSKEY=your_real_production_passkey
-MPESA_CALLBACK_URL=https://yourdomain.com/api/mpesa-callback
+MPESA_CALLBACK_URL=https://kopa.mkopaji.com/api/mpesa-callback
 MPESA_ENVIRONMENT=production
 ```
 
 ### Step 3: Deploy to Production Server
 ```bash
 # Deploy to your production server
-scp -r . user@yourserver:/path/to/fundfast/
+scp -r . user@yourserver:/path/to/kopa-mkopaji/
 
 # On production server:
-cd /path/to/fundfast
+cd /path/to/kopa-mkopaji
 npm install
 cp .env.production .env
 node backend/server.js
@@ -62,7 +62,7 @@ node backend/server.js
 ### Step 4: Test Production Integration
 ```bash
 # Test with small amounts first
-curl -X POST https://yourdomain.com/api/initiate-stk-push \
+curl -X POST https://kopa.mkopaji.com/api/initiate-stk-push \
   -H "Content-Type: application/json" \
   -d '{
     "phoneNumber": "254700000000",
