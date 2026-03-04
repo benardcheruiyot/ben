@@ -53,3 +53,9 @@ When M-Pesa credentials are fixed:
 **Status**: ✅ Application 100% functional with mock payments
 **Next**: Test complete loan application flow
 **Date**: November 10, 2025
+
+### 📝 Latest Update (March 4, 2026)
+
+- Updated M-Pesa STK payload `PartyB` till number to `3104891` in `backend/mpesa-service.js`
+- Git commit: `e51424b`
+- Git tag: `v2026.03.04-mpesa-partyb`
