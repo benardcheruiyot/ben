@@ -1,59 +1,89 @@
-name: Run WWW/TLS Fix on Kopa Mkopa EC2
+name: Auto TLS Fix for Kopa Mkopa
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: Primary domain
+        required: false
+        default: kopa.mkopaji.com
+      www_domain:
+        description: WWW domain
+        required: false
+        default: www.kopa.mkopaji.com
+      email:
+        description: Certificate email
+        required: false
+        default: admin@kopa.mkopaji.com
+  schedule:
+    - cron: '17 2 * * 1'
 
 jobs:
-  run-fix:
+  tls-fix:
+    name: Repair TLS and verify HTTPS
     runs-on: ubuntu-latest
+    env:
+      DOMAIN: ${{ github.event.inputs.domain || 'kopa.mkopaji.com' }}
+      WWW_DOMAIN: ${{ github.event.inputs.www_domain || 'www.kopa.mkopaji.com' }}
+      CERT_EMAIL: ${{ github.event.inputs.email || 'admin@kopa.mkopaji.com' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Copy fix script to server
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          [ -n "${{ secrets.EC2_HOST }}" ] || (echo "Missing EC2_HOST" && exit 1)
+          [ -n "${{ secrets.EC2_SSH_PRIVATE_KEY }}" ] || (echo "Missing EC2_SSH_PRIVATE_KEY" && exit 1)
+
+      - name: Copy TLS fix script to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          username: ${{ secrets.EC2_USERNAME != '' && secrets.EC2_USERNAME || 'ubuntu' }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: "tools/fix_mkopaji_www_tls_noninteractive.sh"
-          target: "/tmp/fix_kopa_mkopaji_www_tls_noninteractive.sh"
+          source: tools/fix_mkopaji_www_tls_noninteractive.sh
+          target: /tmp/
+          strip_components: 1
 
-      - name: Set execute and run script via SSH
+      - name: Run TLS fix script via SSH
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          username: ${{ secrets.EC2_USERNAME != '' && secrets.EC2_USERNAME || 'ubuntu' }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
-            sudo mv /tmp/fix_kopa_mkopaji_www_tls_noninteractive.sh /usr/local/bin/fix_kopa_mkopaji_www_tls_noninteractive.sh
-            sudo chmod +x /usr/local/bin/fix_kopa_mkopaji_www_tls_noninteractive.sh
-            sudo /usr/local/bin/fix_kopa_mkopaji_www_tls_noninteractive.sh
+            set -euo pipefail
+            sudo chmod +x /tmp/fix_mkopaji_www_tls_noninteractive.sh
+            sudo DOMAIN='${{ env.DOMAIN }}' WWW='${{ env.WWW_DOMAIN }}' EMAIL='${{ env.CERT_EMAIL }}' bash /tmp/fix_mkopaji_www_tls_noninteractive.sh
 
-      - name: Force Deploy Kopa Mkopa App
-        uses: appleboy/ssh-action@v1.2.1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          script: |
-            sudo chmod +x /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh
-            sudo /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh
-
-      - name: Fetch verification from public site
+      - name: Verify from GitHub runner
         run: |
-          echo "Fetching https://kopa.mkopaji.com/ to confirm headers"
-          curl -I https://kopa.mkopaji.com/ || true
+          set -euo pipefail
+          echo "Checking https://${DOMAIN}"
+          curl -I --max-time 20 https://${DOMAIN}
+          echo "Checking https://${WWW_DOMAIN}"
+          curl -I --max-time 20 https://${WWW_DOMAIN} || true
 
-# IMPORTANT: Add repository secrets: EC2_HOST, EC2_USERNAME, EC2_SSH_PRIVATE_KEY (private key contents)
-#
-# To add these secrets:
-# 1. Go to your repository on GitHub.
-# 2. Click on 'Settings' > 'Secrets and variables' > 'Actions'.
-# 3. Click 'New repository secret'.
-# 4. Add the following secrets:
-#    - EC2_HOST: Your server's public IP or DNS (e.g., 69.169.97.136 or ec2-xx-xx-xx-xx.compute-1.amazonaws.com)
-#    - EC2_USERNAME: The SSH username (e.g., ubuntu, ec2-user, or root)
-#    - EC2_SSH_PRIVATE_KEY: The contents of your private SSH key (start with '-----BEGIN OPENSSH PRIVATE KEY-----')
-#
-# Without these, the workflow cannot connect to your server securely.
+      - name: Optional app redeploy
+        if: ${{ secrets.RUN_DEPLOY_AFTER_TLS == 'true' }}
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME != '' && secrets.EC2_USERNAME || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            if [ -x /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh ]; then
+              sudo /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh
+            else
+              echo "Deploy script not found; skipping redeploy"
+            fi
+
+      - name: Slack alert on TLS failure
+        if: ${{ failure() && secrets.SLACK_WEBHOOK_URL != '' }}
+        run: |
+          set -euo pipefail
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"❌ TLS auto-fix failed for '${{ env.DOMAIN }}'. Check workflow logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+            '${{ secrets.SLACK_WEBHOOK_URL }}'

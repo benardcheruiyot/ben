@@ -3,8 +3,9 @@
 # Intended to be run on the server as root (e.g., via SSH action)
 set -euo pipefail
 
-DOMAIN="kopa.mkopaji.com"
-WWW="www.kopa.mkopaji.com"
+DOMAIN="${DOMAIN:-kopa.mkopaji.com}"
+WWW="${WWW:-www.kopa.mkopaji.com}"
+EMAIL="${EMAIL:-admin@kopa.mkopaji.com}"
 SITE_CONF="/etc/nginx/sites-available/mkopaji.conf"
 SITE_LINK="/etc/nginx/sites-enabled/mkopaji.conf"
 BACKUP_DIR="/root/nginx-backups-$(date +%Y%m%d-%H%M%S)"
@@ -85,14 +86,14 @@ fi
 
 # Try certbot nginx plugin first
 set +e
-certbot --nginx -d "${DOMAIN}" -d "${WWW}" --non-interactive --agree-tos --email admin@${DOMAIN}
+certbot --nginx -d "${DOMAIN}" -d "${WWW}" --non-interactive --agree-tos --email "${EMAIL}"
 CERTBOT_EXIT=$?
 set -e
 
 if [[ ${CERTBOT_EXIT} -ne 0 ]]; then
   echo "certbot --nginx failed; attempting standalone issuance"
   systemctl stop nginx || true
-  certbot certonly --standalone -d "${DOMAIN}" -d "${WWW}" --non-interactive --agree-tos --email admin@${DOMAIN}
+  certbot certonly --standalone -d "${DOMAIN}" -d "${WWW}" --non-interactive --agree-tos --email "${EMAIL}"
   CERTBOT_EXIT=$?
   systemctl start nginx || true
   if [[ ${CERTBOT_EXIT} -ne 0 ]]; then

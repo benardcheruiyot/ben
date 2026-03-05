@@ -18,6 +18,7 @@
     "pm2-restart": "pm2 restart kopa-mkopaji",
     "pm2-logs": "pm2 logs kopa-mkopaji",
     "pm2-status": "pm2 status",
+    "tls:fix:auto": "powershell -ExecutionPolicy Bypass -File tools/auto-fix-tls.ps1",
     "health-check": "curl -f http://localhost:3002/api/health",
     "lint": "eslint backend/ --ext .js",
     "format": "prettier --write backend/ config/"

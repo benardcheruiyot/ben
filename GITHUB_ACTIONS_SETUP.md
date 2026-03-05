@@ -74,6 +74,20 @@ example: 12.34.56.78
 or: your-domain.com
 ```
 
+#### `EC2_USERNAME` (optional)
+SSH username for your server:
+```
+example: ubuntu
+```
+If omitted, the TLS workflow defaults to `ubuntu`.
+
+#### `RUN_DEPLOY_AFTER_TLS` (optional)
+Controls whether app redeploy runs after TLS fix:
+```
+true  # to run deploy_kopa_mkopaji.sh after certificate repair
+false # or omit to skip redeploy
+```
+
 ### Optional Secrets
 
 #### `SLACK_WEBHOOK_URL`
@@ -215,6 +229,17 @@ pm2 set pm2-logrotate:compress true
 - Go to GitHub Actions tab
 - Select "Deploy to EC2 Ubuntu Server" workflow
 - Click "Run workflow" button
+
+### Manual TLS Repair Workflow
+- Go to GitHub Actions tab
+- Select "Auto TLS Fix for Kopa Mkopa"
+- Click "Run workflow"
+- Optionally override `domain`, `www_domain`, and `email` inputs
+
+### Scheduled TLS Maintenance
+- "Auto TLS Fix for Kopa Mkopa" also runs every Monday at 02:17 UTC
+- It revalidates cert/Nginx setup and verifies HTTPS headers
+- If `SLACK_WEBHOOK_URL` is configured, workflow failures send an alert with a direct link to the run logs
 
 ### Monitoring Deployment
 ```bash
