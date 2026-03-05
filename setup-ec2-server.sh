@@ -92,13 +92,37 @@ sudo systemctl enable nginx
 sudo systemctl start nginx
 
 # Create basic Nginx configuration
-sudo tee /etc/nginx/sites-available/fundfast > /dev/null << 'NGINX_CONF'
+APP_DOMAIN="${APP_DOMAIN:-kopa.mkopaji.com}"
+APP_PORT="${APP_PORT:-3002}"
+sudo tee /etc/nginx/sites-available/kopa-mkopaji.conf > /dev/null << NGINX_CONF
 server {
     listen 80;
-    server_name _;
+    server_name ${APP_DOMAIN};
+
+    location /api/ {
+        proxy_pass http://localhost:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400;
+    }
+
+    location = /health {
+        proxy_pass http://localhost:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
     location / {
-        proxy_pass http://localhost:3002;
+        proxy_pass http://localhost:${APP_PORT};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -113,8 +137,8 @@ server {
 NGINX_CONF
 
 # Enable the site
-sudo ln -sf /etc/nginx/sites-available/fundfast /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -sf /etc/nginx/sites-available/kopa-mkopaji.conf /etc/nginx/sites-enabled/kopa-mkopaji.conf
+sudo rm -f /etc/nginx/sites-enabled/fundfast
 sudo nginx -t && sudo systemctl reload nginx
 
 # Create logs directory for PM2
@@ -219,13 +243,37 @@ sudo systemctl enable nginx
 sudo systemctl start nginx
 
 # Create basic Nginx configuration
-sudo tee /etc/nginx/sites-available/fundfast > /dev/null << 'NGINX_CONF'
+APP_DOMAIN="${APP_DOMAIN:-kopa.mkopaji.com}"
+APP_PORT="${APP_PORT:-3002}"
+sudo tee /etc/nginx/sites-available/kopa-mkopaji.conf > /dev/null << NGINX_CONF
 server {
     listen 80;
-    server_name _;
+    server_name ${APP_DOMAIN};
+
+    location /api/ {
+        proxy_pass http://localhost:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400;
+    }
+
+    location = /health {
+        proxy_pass http://localhost:${APP_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
     location / {
-        proxy_pass http://localhost:3002;
+        proxy_pass http://localhost:${APP_PORT};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -240,8 +288,8 @@ server {
 NGINX_CONF
 
 # Enable the site
-sudo ln -sf /etc/nginx/sites-available/fundfast /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -sf /etc/nginx/sites-available/kopa-mkopaji.conf /etc/nginx/sites-enabled/kopa-mkopaji.conf
+sudo rm -f /etc/nginx/sites-enabled/fundfast
 sudo nginx -t && sudo systemctl reload nginx
 
 # Create logs directory for PM2

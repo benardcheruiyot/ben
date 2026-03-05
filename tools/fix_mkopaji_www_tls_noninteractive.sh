@@ -6,8 +6,9 @@ set -euo pipefail
 DOMAIN="${DOMAIN:-kopa.mkopaji.com}"
 WWW="${WWW:-www.kopa.mkopaji.com}"
 EMAIL="${EMAIL:-admin@kopa.mkopaji.com}"
-SITE_CONF="/etc/nginx/sites-available/mkopaji.conf"
-SITE_LINK="/etc/nginx/sites-enabled/mkopaji.conf"
+SITE_NAME="${SITE_NAME:-kopa-mkopaji}"
+SITE_CONF="/etc/nginx/sites-available/${SITE_NAME}.conf"
+SITE_LINK="/etc/nginx/sites-enabled/${SITE_NAME}.conf"
 BACKUP_DIR="/root/nginx-backups-$(date +%Y%m%d-%H%M%S)"
 WEBROOT="/var/www/html/kopa-mkopaji/frontend"
 

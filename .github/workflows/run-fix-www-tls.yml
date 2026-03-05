@@ -114,8 +114,8 @@ jobs:
               '  location / {' \
               '    try_files $uri $uri.html $uri/ /index.html;' \
               '  }' \
-              '}' > /etc/nginx/sites-available/mkopaji.conf
-              ln -sf /etc/nginx/sites-available/mkopaji.conf /etc/nginx/sites-enabled/mkopaji.conf
+              '}' > /etc/nginx/sites-available/kopa-mkopaji.conf
+              ln -sf /etc/nginx/sites-available/kopa-mkopaji.conf /etc/nginx/sites-enabled/kopa-mkopaji.conf
               nginx -t && systemctl reload nginx
             fi
 
