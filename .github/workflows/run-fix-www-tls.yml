@@ -89,6 +89,28 @@ jobs:
               '  include /etc/letsencrypt/options-ssl-nginx.conf;' \
               '  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;' \
               '' \
+              '  location /api/ {' \
+              '    proxy_pass http://localhost:3002;' \
+              '    proxy_http_version 1.1;' \
+              '    proxy_set_header Upgrade $http_upgrade;' \
+              '    proxy_set_header Connection "upgrade";' \
+              '    proxy_set_header Host $host;' \
+              '    proxy_set_header X-Real-IP $remote_addr;' \
+              '    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+              '    proxy_set_header X-Forwarded-Proto $scheme;' \
+              '    proxy_cache_bypass $http_upgrade;' \
+              '    proxy_read_timeout 86400;' \
+              '  }' \
+              '' \
+              '  location = /health {' \
+              '    proxy_pass http://localhost:3002;' \
+              '    proxy_http_version 1.1;' \
+              '    proxy_set_header Host $host;' \
+              '    proxy_set_header X-Real-IP $remote_addr;' \
+              '    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+              '    proxy_set_header X-Forwarded-Proto $scheme;' \
+              '  }' \
+              '' \
               '  location / {' \
               '    try_files $uri $uri.html $uri/ /index.html;' \
               '  }' \
@@ -103,6 +125,16 @@ jobs:
         run: |
           set -euo pipefail
           python -c "import os,ssl,tempfile,sys;domain=os.environ['DOMAIN'];pem=ssl.get_server_certificate((domain,443));tmp=tempfile.NamedTemporaryFile(delete=False,suffix='.pem');tmp.write(pem.encode());tmp.close();info=ssl._ssl._test_decode_cert(tmp.name);sans=[v for t,v in info.get('subjectAltName',[]) if t=='DNS'];print('certificate_san=',sans);sys.exit(0 if domain in sans else 1)"
+
+      - name: Verify API POST method is allowed
+        run: |
+          set -euo pipefail
+          status=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://${DOMAIN}/api/initiate-stk-push" -H "Content-Type: application/json" -d '{"phoneNumber":"254700000000","amount":1,"accountReference":"CI-CHECK"}')
+          echo "api_post_status=${status}"
+          if [ "${status}" = "405" ]; then
+            echo "API endpoint still returns 405; nginx API proxy is broken"
+            exit 1
+          fi
 
       - name: Optional app redeploy
         if: ${{ env.RUN_DEPLOY_AFTER_TLS == 'true' }}

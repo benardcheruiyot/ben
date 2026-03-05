@@ -148,6 +148,28 @@ server {
   include /etc/letsencrypt/options-ssl-nginx.conf;
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
+  location /api/ {
+    proxy_pass http://localhost:3002;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+    proxy_read_timeout 86400;
+  }
+
+  location = /health {
+    proxy_pass http://localhost:3002;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
   location / {
     try_files \$uri \$uri.html \$uri/ /index.html;
   }
@@ -184,6 +206,12 @@ systemctl reload nginx || true
 echo "Verification: headers for main endpoints"
 curl -I --max-time 10 http://${DOMAIN} || true
 curl -I --max-time 10 https://${DOMAIN} || true
+API_POST_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -X POST "https://${DOMAIN}/api/initiate-stk-push" -H "Content-Type: application/json" -d '{"phoneNumber":"254700000000","amount":1,"accountReference":"HEALTHCHECK"}' || true)
+echo "API POST /api/initiate-stk-push status: ${API_POST_CODE}"
+if [[ "${API_POST_CODE}" == "405" ]]; then
+  echo "API proxy validation failed: got HTTP 405 for POST /api/initiate-stk-push" >&2
+  exit 8
+fi
 if [[ ${HAS_WWW} -eq 1 ]]; then
   curl -I --max-time 10 http://${WWW} || true
   curl -I --max-time 10 https://${WWW} || true
