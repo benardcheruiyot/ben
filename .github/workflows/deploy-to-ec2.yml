@@ -4,10 +4,16 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch: # Allows manual deployment
+  schedule:
+    - cron: '*/10 * * * *'
 
 env:
   NODE_VERSION: '18'
   APP_NAME: 'kopa-mkopaji'
+
+concurrency:
+  group: deploy-kopa-mkopaji
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -70,6 +76,9 @@ jobs:
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
           cd /var/www/html/kopa-mkopaji
+
+          echo "🔧 Enforcing nginx/TLS/API routing config..."
+          SITE_NAME=kopa-mkopaji DOMAIN=kopa.mkopaji.com WWW=www.kopa.mkopaji.com EMAIL=admin@kopa.mkopaji.com bash tools/fix_mkopaji_www_tls_noninteractive.sh || true
           
           echo "🚀 Starting deployment..."
           
