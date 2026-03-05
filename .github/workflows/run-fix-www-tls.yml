@@ -26,6 +26,9 @@ jobs:
       DOMAIN: ${{ github.event.inputs.domain || 'kopa.mkopaji.com' }}
       WWW_DOMAIN: ${{ github.event.inputs.www_domain || 'www.kopa.mkopaji.com' }}
       CERT_EMAIL: ${{ github.event.inputs.email || 'admin@kopa.mkopaji.com' }}
+      SSH_USERNAME: ${{ secrets.EC2_USERNAME || 'ubuntu' }}
+      RUN_DEPLOY_AFTER_TLS: ${{ secrets.RUN_DEPLOY_AFTER_TLS }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,7 +43,7 @@ jobs:
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME != '' && secrets.EC2_USERNAME || 'ubuntu' }}
+          username: ${{ env.SSH_USERNAME }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           source: tools/fix_mkopaji_www_tls_noninteractive.sh
           target: /tmp/
@@ -50,7 +53,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME != '' && secrets.EC2_USERNAME || 'ubuntu' }}
+          username: ${{ env.SSH_USERNAME }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
@@ -66,11 +69,11 @@ jobs:
           curl -I --max-time 20 https://${WWW_DOMAIN} || true
 
       - name: Optional app redeploy
-        if: ${{ secrets.RUN_DEPLOY_AFTER_TLS == 'true' }}
+        if: ${{ env.RUN_DEPLOY_AFTER_TLS == 'true' }}
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME != '' && secrets.EC2_USERNAME || 'ubuntu' }}
+          username: ${{ env.SSH_USERNAME }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
@@ -81,9 +84,9 @@ jobs:
             fi
 
       - name: Slack alert on TLS failure
-        if: ${{ failure() && secrets.SLACK_WEBHOOK_URL != '' }}
+        if: ${{ failure() && env.SLACK_WEBHOOK_URL != '' }}
         run: |
           set -euo pipefail
           curl -X POST -H 'Content-type: application/json' \
             --data '{"text":"❌ TLS auto-fix failed for '${{ env.DOMAIN }}'. Check workflow logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
-            '${{ secrets.SLACK_WEBHOOK_URL }}'
+            '${{ env.SLACK_WEBHOOK_URL }}'
