@@ -70,30 +70,29 @@ jobs:
             fi
 
             if [ -f "/etc/letsencrypt/live/${{ env.DOMAIN }}/fullchain.pem" ] && [ -f "/etc/letsencrypt/live/${{ env.DOMAIN }}/privkey.pem" ]; then
-              cat > /etc/nginx/sites-available/mkopaji.conf <<'NGINX_CONF'
-server {
-  listen 80;
-  server_name kopa.mkopaji.com;
-  return 301 https://kopa.mkopaji.com$request_uri;
-}
-
-server {
-  listen 443 ssl;
-  server_name kopa.mkopaji.com;
-
-  root /var/www/html/kopesha-loan-app;
-  index index.html index.htm;
-
-  ssl_certificate /etc/letsencrypt/live/kopa.mkopaji.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/kopa.mkopaji.com/privkey.pem;
-  include /etc/letsencrypt/options-ssl-nginx.conf;
-  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-  location / {
-    try_files $uri $uri/ =404;
-  }
-}
-NGINX_CONF
+              printf '%s\n' \
+              'server {' \
+              '  listen 80;' \
+              '  server_name kopa.mkopaji.com;' \
+              '  return 301 https://kopa.mkopaji.com$request_uri;' \
+              '}' \
+              '' \
+              'server {' \
+              '  listen 443 ssl;' \
+              '  server_name kopa.mkopaji.com;' \
+              '' \
+              '  root /var/www/html/kopesha-loan-app;' \
+              '  index index.html index.htm;' \
+              '' \
+              '  ssl_certificate /etc/letsencrypt/live/kopa.mkopaji.com/fullchain.pem;' \
+              '  ssl_certificate_key /etc/letsencrypt/live/kopa.mkopaji.com/privkey.pem;' \
+              '  include /etc/letsencrypt/options-ssl-nginx.conf;' \
+              '  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;' \
+              '' \
+              '  location / {' \
+              '    try_files $uri $uri/ =404;' \
+              '  }' \
+              '}' > /etc/nginx/sites-available/mkopaji.conf
               ln -sf /etc/nginx/sites-available/mkopaji.conf /etc/nginx/sites-enabled/mkopaji.conf
               nginx -t && systemctl reload nginx
             fi
@@ -103,25 +102,7 @@ NGINX_CONF
       - name: Verify from GitHub runner
         run: |
           set -euo pipefail
-          python - <<'PY'
-import os
-import ssl
-import tempfile
-import sys
-
-domain = os.environ["DOMAIN"]
-pem = ssl.get_server_certificate((domain, 443))
-tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.pem')
-tmp.write(pem.encode())
-tmp.close()
-info = ssl._ssl._test_decode_cert(tmp.name)
-sans = [v for t, v in info.get('subjectAltName', []) if t == 'DNS']
-print('certificate_san=', sans)
-if domain not in sans:
-    print(f"ERROR: certificate SAN does not include {domain}")
-    sys.exit(1)
-print("TLS certificate SAN check passed")
-PY
+          python -c "import os,ssl,tempfile,sys;domain=os.environ['DOMAIN'];pem=ssl.get_server_certificate((domain,443));tmp=tempfile.NamedTemporaryFile(delete=False,suffix='.pem');tmp.write(pem.encode());tmp.close();info=ssl._ssl._test_decode_cert(tmp.name);sans=[v for t,v in info.get('subjectAltName',[]) if t=='DNS'];print('certificate_san=',sans);sys.exit(0 if domain in sans else 1)"
 
       - name: Optional app redeploy
         if: ${{ env.RUN_DEPLOY_AFTER_TLS == 'true' }}
