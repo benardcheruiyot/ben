@@ -1,6 +1,12 @@
 name: Auto TLS Fix for Kopa Mkopa
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/run-fix-www-tls.yml
+      - tools/fix_mkopaji_www_tls_noninteractive.sh
   workflow_dispatch:
     inputs:
       domain:
