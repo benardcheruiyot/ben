@@ -190,3 +190,31 @@ node -e "require('./backend/mpesa-service.js').getAccessToken().then(t => consol
 
 ---
 **🔴 Remember: Start with small test amounts in production!**
+
+## 🛡️ Best-Practice Forced Recovery (Independent of GitHub Actions)
+
+When GitHub Actions queue is degraded, deploy directly from the server with the built-in scripts.
+
+### One-command forced deploy (run on your local machine)
+
+```bash
+ssh root@kopa.mkopaji.com "cd /var/www/html/kopa-mkopaji && git pull origin main && chmod +x tools/force-server-deploy.sh && sudo APP_DIR=/var/www/html/kopa-mkopaji APP_NAME=kopa-mkopaji SITE_NAME=kopa-mkopaji DOMAIN=kopa.mkopaji.com WWW=www.kopa.mkopaji.com EMAIL=admin@kopa.mkopaji.com bash tools/force-server-deploy.sh"
+```
+
+### Install automatic self-heal deploy (every 5 minutes)
+
+Run once on the server:
+
+```bash
+cd /var/www/html/kopa-mkopaji
+git pull origin main
+chmod +x tools/install-auto-recover-cron.sh
+sudo APP_DIR=/var/www/html/kopa-mkopaji APP_NAME=kopa-mkopaji SITE_NAME=kopa-mkopaji DOMAIN=kopa.mkopaji.com WWW=www.kopa.mkopaji.com EMAIL=admin@kopa.mkopaji.com BRANCH=main bash tools/install-auto-recover-cron.sh
+```
+
+### Verify auto-heal status
+
+```bash
+crontab -l | grep auto-recover-deploy
+tail -n 100 /var/log/kopa-mkopaji-auto-deploy.log
+```
