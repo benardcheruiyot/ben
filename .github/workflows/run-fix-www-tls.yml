@@ -32,7 +32,7 @@ jobs:
       DOMAIN: ${{ github.event.inputs.domain || 'kopa.mkopaji.com' }}
       WWW_DOMAIN: ${{ github.event.inputs.www_domain || 'www.kopa.mkopaji.com' }}
       CERT_EMAIL: ${{ github.event.inputs.email || 'admin@kopa.mkopaji.com' }}
-      SSH_USERNAME: ${{ secrets.EC2_USERNAME }}
+      SSH_USERNAME: ${{ secrets.EC2_USERNAME || 'root' }}
       RUN_DEPLOY_AFTER_TLS: ${{ secrets.RUN_DEPLOY_AFTER_TLS }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
@@ -45,40 +45,18 @@ jobs:
           [ -n "${{ secrets.EC2_HOST }}" ] || (echo "Missing EC2_HOST" && exit 1)
           [ -n "${{ secrets.EC2_SSH_PRIVATE_KEY }}" ] || (echo "Missing EC2_SSH_PRIVATE_KEY" && exit 1)
 
-      - name: Upload and run TLS fix via SSH (auto user detect)
-        run: |
-          set -euo pipefail
-          HOST='${{ secrets.EC2_HOST }}'
-          KEY_PATH="$RUNNER_TEMP/ec2_key"
-          printf '%s\n' '${{ secrets.EC2_SSH_PRIVATE_KEY }}' > "$KEY_PATH"
-          chmod 600 "$KEY_PATH"
-
-          if [ -n "${SSH_USERNAME}" ]; then
-            CANDIDATES="${SSH_USERNAME}"
-          else
-            CANDIDATES="root ubuntu ec2-user"
-          fi
-
-          CONNECT_USER=""
-          for U in $CANDIDATES; do
-            if ssh -i "$KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$U@$HOST" "echo ok" >/dev/null 2>&1; then
-              CONNECT_USER="$U"
-              break
-            fi
-          done
-
-          if [ -z "$CONNECT_USER" ]; then
-            echo "Could not connect via SSH with candidates: $CANDIDATES" >&2
-            exit 1
-          fi
-
-          echo "Using SSH user: $CONNECT_USER"
-          echo "CONNECT_USER=$CONNECT_USER" >> "$GITHUB_ENV"
-
-          scp -i "$KEY_PATH" -o StrictHostKeyChecking=no tools/fix_mkopaji_www_tls_noninteractive.sh "$CONNECT_USER@$HOST:/tmp/fix_mkopaji_www_tls_noninteractive.sh"
-
-          ssh -i "$KEY_PATH" -o StrictHostKeyChecking=no "$CONNECT_USER@$HOST" \
-            "sudo chmod +x /tmp/fix_mkopaji_www_tls_noninteractive.sh && sudo DOMAIN='${DOMAIN}' WWW='${WWW_DOMAIN}' EMAIL='${CERT_EMAIL}' bash /tmp/fix_mkopaji_www_tls_noninteractive.sh"
+      - name: Run TLS fix script via SSH
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ env.SSH_USERNAME }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/tools/fix_mkopaji_www_tls_noninteractive.sh"
+            curl -fsSL "$SCRIPT_URL" -o /tmp/fix_mkopaji_www_tls_noninteractive.sh
+            sudo chmod +x /tmp/fix_mkopaji_www_tls_noninteractive.sh
+            sudo DOMAIN='${{ env.DOMAIN }}' WWW='${{ env.WWW_DOMAIN }}' EMAIL='${{ env.CERT_EMAIL }}' bash /tmp/fix_mkopaji_www_tls_noninteractive.sh
 
       - name: Verify from GitHub runner
         run: |
@@ -89,18 +67,19 @@ jobs:
           curl -I --max-time 20 https://${WWW_DOMAIN} || true
 
       - name: Optional app redeploy
-        if: ${{ env.RUN_DEPLOY_AFTER_TLS == 'true' && env.CONNECT_USER != '' }}
-        run: |
-          set -euo pipefail
-          HOST='${{ secrets.EC2_HOST }}'
-          KEY_PATH="$RUNNER_TEMP/ec2_key"
-          if [ ! -f "$KEY_PATH" ]; then
-            printf '%s\n' '${{ secrets.EC2_SSH_PRIVATE_KEY }}' > "$KEY_PATH"
-            chmod 600 "$KEY_PATH"
-          fi
-
-          ssh -i "$KEY_PATH" -o StrictHostKeyChecking=no "${CONNECT_USER}@${HOST}" \
-            "set -euo pipefail; if [ -x /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh ]; then sudo /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh; else echo 'Deploy script not found; skipping redeploy'; fi"
+        if: ${{ env.RUN_DEPLOY_AFTER_TLS == 'true' }}
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ env.SSH_USERNAME }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            if [ -x /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh ]; then
+              sudo /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh
+            else
+              echo "Deploy script not found; skipping redeploy"
+            fi
 
       - name: Slack alert on TLS failure
         if: ${{ failure() && env.SLACK_WEBHOOK_URL != '' }}
