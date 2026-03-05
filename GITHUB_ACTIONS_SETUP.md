@@ -80,6 +80,7 @@ SSH username for your server:
 example: ubuntu
 ```
 If omitted, the TLS workflow defaults to `ubuntu`.
+If your server uses root SSH (as in this repo's deploy workflow), set `EC2_USERNAME=root` or rely on the TLS workflow default `root`.
 
 #### `RUN_DEPLOY_AFTER_TLS` (optional)
 Controls whether app redeploy runs after TLS fix:
