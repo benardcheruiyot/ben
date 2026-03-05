@@ -32,7 +32,6 @@ jobs:
       DOMAIN: ${{ github.event.inputs.domain || 'kopa.mkopaji.com' }}
       WWW_DOMAIN: ${{ github.event.inputs.www_domain || 'www.kopa.mkopaji.com' }}
       CERT_EMAIL: ${{ github.event.inputs.email || 'admin@kopa.mkopaji.com' }}
-      SSH_USERNAME: ${{ secrets.EC2_USERNAME || 'root' }}
       RUN_DEPLOY_AFTER_TLS: ${{ secrets.RUN_DEPLOY_AFTER_TLS }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
@@ -49,7 +48,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ env.SSH_USERNAME }}
+          username: root
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
@@ -71,7 +70,7 @@ jobs:
         uses: appleboy/ssh-action@v1.2.1
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ env.SSH_USERNAME }}
+          username: root
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
