@@ -1,4 +1,5 @@
 name: Auto TLS Fix for Kopa Mkopa
+# Trigger note: workflow touch to force fresh production run after nginx isolation fix.
 
 on:
   push:
