@@ -52,10 +52,15 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
+            if command -v sudo >/dev/null 2>&1 && [ "$(id -u)" -ne 0 ]; then
+              AS_ROOT="sudo"
+            else
+              AS_ROOT=""
+            fi
             SCRIPT_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/tools/fix_mkopaji_www_tls_noninteractive.sh"
             curl -fsSL "$SCRIPT_URL" -o /tmp/fix_mkopaji_www_tls_noninteractive.sh
-            sudo chmod +x /tmp/fix_mkopaji_www_tls_noninteractive.sh
-            sudo DOMAIN='${{ env.DOMAIN }}' WWW='${{ env.WWW_DOMAIN }}' EMAIL='${{ env.CERT_EMAIL }}' bash /tmp/fix_mkopaji_www_tls_noninteractive.sh
+            $AS_ROOT chmod +x /tmp/fix_mkopaji_www_tls_noninteractive.sh
+            $AS_ROOT DOMAIN='${{ env.DOMAIN }}' WWW='${{ env.WWW_DOMAIN }}' EMAIL='${{ env.CERT_EMAIL }}' bash /tmp/fix_mkopaji_www_tls_noninteractive.sh
 
       - name: Verify from GitHub runner
         run: |
@@ -74,8 +79,13 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -euo pipefail
+            if command -v sudo >/dev/null 2>&1 && [ "$(id -u)" -ne 0 ]; then
+              AS_ROOT="sudo"
+            else
+              AS_ROOT=""
+            fi
             if [ -x /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh ]; then
-              sudo /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh
+              $AS_ROOT /var/www/html/kopa-mkopaji/tools/deploy_kopa_mkopaji.sh
             else
               echo "Deploy script not found; skipping redeploy"
             fi
