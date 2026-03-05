@@ -9,7 +9,7 @@ EMAIL="${EMAIL:-admin@kopa.mkopaji.com}"
 SITE_CONF="/etc/nginx/sites-available/mkopaji.conf"
 SITE_LINK="/etc/nginx/sites-enabled/mkopaji.conf"
 BACKUP_DIR="/root/nginx-backups-$(date +%Y%m%d-%H%M%S)"
-WEBROOT="/var/www/html/kopesha-loan-app"
+WEBROOT="/var/www/html/kopa-mkopaji/frontend"
 
 restore_backup_and_exit() {
   echo "nginx config test failed. Restoring backups and exiting." >&2
@@ -149,7 +149,7 @@ server {
   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
   location / {
-    try_files \$uri \$uri/ =404;
+    try_files \$uri \$uri.html \$uri/ /index.html;
   }
 }
 NGINX_CONF
