@@ -4,12 +4,11 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch: # Allows manual deployment
-  schedule:
-    - cron: '*/10 * * * *'
 
 env:
   NODE_VERSION: '18'
   APP_NAME: 'kopa-mkopaji'
+  DEPLOY_HOST: ${{ secrets.EC2_SSH_HOST != '' && secrets.EC2_SSH_HOST || secrets.EC2_HOST }}
 
 concurrency:
   group: deploy-kopa-mkopaji
@@ -58,20 +57,37 @@ jobs:
     - name: 📦 Install dependencies
       run: npm ci --only=production
 
+    - name: 🔌 Preflight SSH reachability
+      run: |
+        set -euo pipefail
+        if [ -z "${DEPLOY_HOST}" ]; then
+          echo "Missing deploy host. Set EC2_SSH_HOST (recommended) or EC2_HOST." >&2
+          exit 1
+        fi
+        echo "Checking SSH connectivity to ${DEPLOY_HOST}:22"
+        if ! timeout 12 bash -c "</dev/tcp/${DEPLOY_HOST}/22"; then
+          echo "Cannot reach ${DEPLOY_HOST}:22 from GitHub runner." >&2
+          echo "Likely causes: wrong host secret, security group blocking 22, server down, Cloudflare/proxy host used instead of server IP." >&2
+          echo "Fix: set EC2_SSH_HOST to the server public IP or SSH DNS and allow inbound TCP 22 from 0.0.0.0/0 (or GitHub runner ranges)." >&2
+          exit 1
+        fi
+
     - name: 📁 Deploy files to server
       uses: appleboy/scp-action@v0.1.7
       with:
-        host: ${{ secrets.EC2_HOST }}
+        host: ${{ env.DEPLOY_HOST }}
         username: root
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         source: "."
         target: "/var/www/html/kopa-mkopaji"
         strip_components: 1
+        timeout: 60s
+        command_timeout: 10m
 
     - name: 🔄 Restart App with PM2
       uses: appleboy/ssh-action@v1.2.1
       with:
-        host: ${{ secrets.EC2_HOST }}
+        host: ${{ env.DEPLOY_HOST }}
         username: root
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
@@ -128,7 +144,7 @@ jobs:
       if: success()
       uses: appleboy/ssh-action@v1.2.1
       with:
-        host: ${{ secrets.EC2_HOST }}
+        host: ${{ env.DEPLOY_HOST }}
         username: root
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
