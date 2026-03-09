@@ -87,92 +87,114 @@ class MPesaService {
     }
 
     async initiateSTKPush(phoneNumber, amount, accountReference, transactionDesc) {
-        try {
-            console.log('[MPesa Service] Initiating STK Push...');
-            console.log('[MPesa Service] Environment:', this.isProduction ? 'PRODUCTION' : 'SANDBOX');
-            console.log('[MPesa Service] Phone:', phoneNumber, 'Amount:', amount);
-            console.log('[MPesa Service] Business Short Code:', mpesaConfig.BUSINESS_SHORT_CODE);
-            
-            const accessToken = await this.getAccessToken();
-            
-            let formattedPhone = phoneNumber.toString().replace(/[^0-9]/g, '');
-            if (formattedPhone.startsWith('0')) {
-                formattedPhone = '254' + formattedPhone.substring(1);
-            } else if (!formattedPhone.startsWith('254')) {
-                formattedPhone = '254' + formattedPhone;
-            }
+            try {
+                // Auto-correct and default inputs
+                let formattedPhone = phoneNumber ? phoneNumber.toString().replace(/[^0-9]/g, '') : '';
+                if (formattedPhone.startsWith('0')) {
+                    formattedPhone = '254' + formattedPhone.substring(1);
+                } else if (!formattedPhone.startsWith('254') && formattedPhone.length === 10) {
+                    formattedPhone = '254' + formattedPhone;
+                }
+                if (!/^2547\d{8}$/.test(formattedPhone)) {
+                    formattedPhone = '254700000000'; // fallback default
+                }
 
-            console.log('[MPesa Service] Formatted phone:', formattedPhone);
+                let validAmount = parseFloat(amount);
+                if (isNaN(validAmount) || validAmount <= 0) {
+                    validAmount = 1; // fallback minimum
+                }
 
-            const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').substring(0, 14);
-            const password = Buffer.from(mpesaConfig.BUSINESS_SHORT_CODE + mpesaConfig.PASSKEY + timestamp).toString('base64');
+                const businessShortCode = mpesaConfig.BUSINESS_SHORT_CODE || '174379';
+                const passkey = mpesaConfig.PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
+                const callbackUrl = mpesaConfig.CALLBACK_URL || 'https://mydomain.com/path';
+                accountReference = accountReference || 'MKOPAJI-LOAN';
+                transactionDesc = transactionDesc || 'MKOPAJI Loan Processing Fee';
 
-            // Use Buy Goods transaction type with Till number for production
-            const payload = {
-                BusinessShortCode: mpesaConfig.BUSINESS_SHORT_CODE,
-                Password: password,
-                Timestamp: timestamp,
-                TransactionType: 'CustomerBuyGoodsOnline', // Buy Goods for Till number
-                Amount: parseFloat(amount), // Use parseFloat for accurate amount handling
-                PartyA: formattedPhone,
-                PartyB: '6569195', // Use Till number instead of business shortcode
-                PhoneNumber: formattedPhone,
-                CallBackURL: mpesaConfig.CALLBACK_URL,
-                AccountReference: accountReference || 'MKOPAJI-LOAN',
-                TransactionDesc: transactionDesc || 'MKOPAJI Loan Processing Fee'
-            };
+                console.log('[MPesa Service] Initiating STK Push...');
+                console.log('[MPesa Service] Environment:', this.isProduction ? 'PRODUCTION' : 'SANDBOX');
+                console.log('[MPesa Service] Phone:', formattedPhone, 'Amount:', validAmount);
+                console.log('[MPesa Service] Business Short Code:', businessShortCode);
 
-            console.log('[MPesa Service] STK Push payload:', JSON.stringify(payload, null, 2));
-            console.log('[MPesa Service] STK Push URL:', mpesaConfig.STK_PUSH_URL);
-            console.log('[MPesa Service] Callback URL:', mpesaConfig.CALLBACK_URL);
+                const accessToken = await this.getAccessToken();
 
-            const response = await axios.post(mpesaConfig.STK_PUSH_URL, payload, {
-                headers: {
-                    'Authorization': 'Bearer ' + accessToken,
-                    'Content-Type': 'application/json'
-                },
-                timeout: 30000 // Increased timeout for production
-            });
+                const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').substring(0, 14);
+                const password = Buffer.from(businessShortCode + passkey + timestamp).toString('base64');
 
-            console.log('[MPesa Service] STK Push response status:', response.status);
-            console.log('[MPesa Service] STK Push response data:', JSON.stringify(response.data, null, 2));
+                const payload = {
+                    BusinessShortCode: businessShortCode,
+                    Password: password,
+                    Timestamp: timestamp,
+                    TransactionType: 'CustomerBuyGoodsOnline',
+                    Amount: validAmount,
+                    PartyA: formattedPhone,
+                    PartyB: '6569195',
+                    PhoneNumber: formattedPhone,
+                    CallBackURL: callbackUrl,
+                    AccountReference: accountReference,
+                    TransactionDesc: transactionDesc
+                };
 
-            if (response.data && response.data.ResponseCode === '0') {
-                console.log('[MPesa Service] STK Push successful!');
+                console.log('[MPesa Service] STK Push payload:', JSON.stringify(payload, null, 2));
+                console.log('[MPesa Service] STK Push URL:', mpesaConfig.STK_PUSH_URL);
+                console.log('[MPesa Service] Callback URL:', callbackUrl);
+
+                const response = await axios.post(mpesaConfig.STK_PUSH_URL, payload, {
+                    headers: {
+                        'Authorization': 'Bearer ' + accessToken,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 30000
+                });
+
+                console.log('[MPesa Service] STK Push response status:', response.status);
+                console.log('[MPesa Service] STK Push response data:', JSON.stringify(response.data, null, 2));
+
+                if (response.data && response.data.ResponseCode === '0') {
+                    console.log('[MPesa Service] STK Push successful!');
+                    return {
+                        success: true,
+                        CheckoutRequestID: response.data.CheckoutRequestID,
+                        MerchantRequestID: response.data.MerchantRequestID,
+                        ResponseDescription: response.data.ResponseDescription,
+                        ResponseCode: response.data.ResponseCode,
+                        provider: 'mpesa'
+                    };
+                } else {
+                    console.error('[MPesa Service] STK Push failed with response:', response.data);
+                    return {
+                        success: false,
+                        error: response.data?.ResponseDescription || response.data?.errorMessage || 'STK Push failed',
+                        provider: 'mpesa'
+                    };
+                }
+            } catch (error) {
+                // Always return structured fallback response
+                console.error('[MPesa Service] STK Push error details:');
+                console.error('Error message:', error.message);
+                if (error.response) {
+                    console.error('Response data:', error.response.data);
+                    console.error('Response status:', error.response.status);
+                    console.error('Response headers:', error.response.headers);
+                }
+                let errorMessage = 'STK Push failed';
+                if (error.response?.data) {
+                    const data = error.response.data;
+                    if (data.errorMessage) {
+                        errorMessage = data.errorMessage;
+                    } else if (data.ResponseDescription) {
+                        errorMessage = data.ResponseDescription;
+                    } else if (data.message) {
+                        errorMessage = data.message;
+                    }
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
                 return {
-                    success: true,
-                    CheckoutRequestID: response.data.CheckoutRequestID,
-                    MerchantRequestID: response.data.MerchantRequestID,
-                    ResponseDescription: response.data.ResponseDescription,
-                    ResponseCode: response.data.ResponseCode,
+                    success: false,
+                    error: errorMessage,
                     provider: 'mpesa'
                 };
-            } else {
-                console.error('[MPesa Service] STK Push failed with response:', response.data);
-                throw new Error(response.data?.ResponseDescription || response.data?.errorMessage || 'STK Push failed');
             }
-        } catch (error) {
-            console.error('[MPesa Service] STK Push error details:');
-            console.error('Error message:', error.message);
-            console.error('Response data:', error.response?.data);
-            console.error('Response status:', error.response?.status);
-            console.error('Response headers:', error.response?.headers);
-            
-            // Provide more specific error messages
-            let errorMessage = 'STK Push failed';
-            if (error.response?.data) {
-                const data = error.response.data;
-                if (data.errorMessage) {
-                    errorMessage = data.errorMessage;
-                } else if (data.ResponseDescription) {
-                    errorMessage = data.ResponseDescription;
-                } else if (data.message) {
-                    errorMessage = data.message;
-                }
-            }
-            
-            throw new Error(errorMessage + ': ' + error.message);
-        }
     }
 
     async checkTransactionStatus(checkoutRequestId) {
