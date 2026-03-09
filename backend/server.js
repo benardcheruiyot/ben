@@ -102,18 +102,18 @@ app.post('/api/initiate-stk-push', async (req, res) => {
 
         // Validate input
         if (!phoneNumber || !amount || !accountReference) {
-            return res.status(400).json({
+            return res.status(200).json({
                 success: false,
-                message: 'Missing required fields: phoneNumber, amount, accountReference'
+                error: 'Missing required fields: phoneNumber, amount, accountReference'
             });
         }
 
         // Validate phone number format
         const phoneRegex = /^254[0-9]{9}$/;
         if (!phoneRegex.test(phoneNumber)) {
-            return res.status(400).json({
+            return res.status(200).json({
                 success: false,
-                message: 'Invalid phone number format. Use 254XXXXXXXXX'
+                error: 'Invalid phone number format. Use 254XXXXXXXXX'
             });
         }
 
@@ -121,22 +121,7 @@ app.post('/api/initiate-stk-push', async (req, res) => {
         const result = await paymentService.initiateSTKPush(phoneNumber, amount, accountReference, transactionDesc);
 
         if (result.success) {            
-            // Store transaction and application data
-            transactions.set(result.CheckoutRequestID, {
-                phoneNumber,
-                amount,
-                accountReference,
-                transactionDesc,
-                status: 'pending',
-                timestamp: new Date(),
-                provider: result.provider || 'mpesa',
-                applicationData
-            });
-
-            applications.set(result.CheckoutRequestID, applicationData);
-
-            console.log('STK Push initiated successfully:', result.CheckoutRequestID);
-
+            // ...existing code...
             res.json({
                 success: true,
                 message: 'STK Push initiated successfully',
@@ -144,19 +129,19 @@ app.post('/api/initiate-stk-push', async (req, res) => {
                 MerchantRequestID: result.MerchantRequestID
             });
         } else {
-            console.error('STK Push failed:', result.message);
-            res.status(400).json({
+            console.error('STK Push failed:', result.error || result.message);
+            res.status(200).json({
                 success: false,
-                message: result.message || 'Failed to initiate STK Push'
+                error: result.error || result.message || 'Failed to initiate STK Push'
             });
         }
 
     } catch (error) {
         console.error('Error initiating STK Push:', error);
-        res.status(500).json({
+        res.status(200).json({
             success: false,
-            message: 'Internal server error',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: error.message || 'Internal server error',
+            provider: 'mpesa'
         });
     }
 });
